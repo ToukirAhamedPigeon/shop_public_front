@@ -12,9 +12,10 @@ const getAccessToken = () => {
 }
 
 let isRefreshing = false
-let failedQueue: any[] = []
+type QueuedRequest = { resolve: (token: string | null) => void; reject: (error: unknown) => void }
+let failedQueue: QueuedRequest[] = []
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error)
@@ -45,7 +46,7 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<string | null>((resolve, reject) => {
           failedQueue.push({ resolve, reject })
         }).then((token) => {
           originalRequest.headers.Authorization = `Bearer ${token}`
